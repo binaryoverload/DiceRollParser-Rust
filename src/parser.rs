@@ -9,6 +9,7 @@ use crate::token::operator::OperatorType;
 
 pub(crate) fn parse(input: &str) -> Vec<Token> {
     lazy_static! {
+        // Original pattern with comments: https://github.com/binaryoverload/DiceRollParser/blob/29485fdd78/src/main/java/uk/co/binaryoverload/dicerollparser/Parser.java#L25-L40
         static ref DICEROLL: Regex = Regex::new("(?:(?P<die>\\d+d\\d+)|\\((?P<dice>(?:\\d+d\\d+,?)+)\\))(?P<selectors>(?:(?:k|p|mi|ma|rr|ro|ra|e)(?:\\d+)?(?:[><lh]\\d+)?)+)?(?P<operators>(?:[+\\-*/]\\d+)+)?(?:\\[(?P<label>[^\\]]+)])?(?:(?P<roll_operator>[+\\-*/])|$)").unwrap();
     }
     for cap in DICEROLL.captures_iter(input) {
