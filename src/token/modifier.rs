@@ -12,10 +12,11 @@ pub(crate) enum ModifierType {
     Drop
 }
 
+#[derive(Debug)]
 pub(crate) struct Modifier {
-    modifier_type: ModifierType,
-    modifier_value: Option<u8>,
-    selector: Option<(SelectorType, u8)>
+    pub(crate) modifier_type: ModifierType,
+    pub(crate) modifier_value: Option<u8>,
+    pub(crate) selector: Option<(SelectorType, u8)>
 }
 
 impl From<&str> for ModifierType {

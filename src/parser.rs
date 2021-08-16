@@ -1,8 +1,9 @@
 use regex::Regex;
 use lazy_static::lazy_static;
 use crate::token::{Token, Dice};
+use crate::token::modifier::{ModifierType, Modifier};
 use std::option::Option::Some;
-use std::borrow::Borrow;
+use crate::token::selector::SelectorType;
 
 pub(crate) fn parse(input: &str) -> Vec<Token> {
     lazy_static! {
@@ -20,7 +21,8 @@ pub(crate) fn parse(input: &str) -> Vec<Token> {
                         for die in mat.as_str().split(",") {
                             tokens.push(parse_dice(die))
                         }
-                    }
+                    },
+                    3 => tokens.append(&mut parse_modifiers(mat.as_str())),
                     _ => {}
                 }
                 println!("Group {} [{}] ({}-{}): '{}'", group, group_to_name(group), mat.start(), mat.end(), mat.as_str())
@@ -52,10 +54,31 @@ fn parse_dice(dice_input: &str) -> Token {
     }
 }
 
-fn parse_modifiers(modifier_input: &str) -> Token {
+fn parse_modifiers(modifier_input: &str) -> Vec<Token> {
     lazy_static! {
-        static ref MODIFIERS: Regex = Regex::new("(k|p|mi|ma|rr|ro|ra|e)(\\d+)?(?:([><lh])(\\d+))?")
+        static ref MODIFIERS: Regex = Regex::new("(?P<type>k|p|mi|ma|rr|ro|ra|e)(?P<value>\\d+)?(?:(?P<selector>[><lh])(?P<selector_value>\\d+))?").unwrap();
     }
+    let mut tokens: Vec<Token> = vec![];
+    for capture in MODIFIERS.captures_iter(modifier_input) {
+        let modifier_type = ModifierType::from(capture.name("type").unwrap().as_str());
+        let modifier_value: Option<u8> = capture.name("value").map_or(None, |value| { Some(value.as_str().parse().unwrap()) });
+        let selector: Option<(SelectorType, u8)> = if let Some(selector) = capture.name("selector") {
+            let selector_type = SelectorType::from(selector.as_str());
+            if let Some(selector_value) = capture.name("selector_value") {
+                Some((selector_type, selector_value.as_str().parse().unwrap()))
+            } else {
+                panic!("Selector value is missing from specified selector type")
+            }
+        } else {
+            None
+        };
+        tokens.push(Token::Modifier(Modifier {
+            modifier_type,
+            modifier_value,
+            selector
+        }))
+    }
+    return tokens;
 }
 
 fn group_to_name(group: u8) -> &'static str {

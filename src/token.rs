@@ -1,9 +1,9 @@
 use modifier::Modifier;
 use operator::OperatorType;
 
-mod selector;
-mod operator;
-mod modifier;
+pub(crate) mod selector;
+pub(crate) mod operator;
+pub(crate) mod modifier;
 
 #[derive(Debug)]
 pub(crate) struct Dice {
