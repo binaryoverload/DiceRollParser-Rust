@@ -25,6 +25,7 @@ pub(crate) fn parse(input: &str) -> Vec<Token> {
                         }
                     },
                     3 => tokens.append(&mut parse_modifiers(mat.as_str())),
+                    4 => tokens.append(&mut parse_operators(mat.as_str())),
                     5 => tokens.push(Label(mat.as_str())),
                     6 => tokens.push(JoiningOperator(OperatorType::from(mat.as_str()))),
                     _ => {}
@@ -62,7 +63,7 @@ fn parse_modifiers(modifier_input: &str) -> Vec<Token> {
     lazy_static! {
         static ref MODIFIERS: Regex = Regex::new("(?P<type>k|p|mi|ma|rr|ro|ra|e)(?P<value>\\d+)?(?:(?P<selector>[><lh])(?P<selector_value>\\d+))?").unwrap();
     }
-    let mut tokens: Vec<Token> = vec![];
+    let mut modifiers: Vec<Token> = vec![];
     for capture in MODIFIERS.captures_iter(modifier_input) {
         let modifier_type = ModifierType::from(capture.name("type").unwrap().as_str());
         let modifier_value: Option<u8> = capture.name("value").map_or(None, |value| { Some(value.as_str().parse().unwrap()) });
@@ -76,13 +77,27 @@ fn parse_modifiers(modifier_input: &str) -> Vec<Token> {
         } else {
             None
         };
-        tokens.push(Token::Modifier(Modifier {
+        modifiers.push(Token::Modifier(Modifier {
             modifier_type,
             modifier_value,
             selector
         }))
     }
-    return tokens;
+    return modifiers;
+}
+
+fn parse_operators(operators_input: &str) -> Vec<Token> {
+    lazy_static! {
+        static ref OPERATORS: Regex = Regex::new("(?P<operator>[+\\-*/])(?P<value>\\d+)").unwrap();
+    }
+    let mut operators: Vec<Token> = vec![];
+    for capture in OPERATORS.captures_iter(operators_input) {
+        // There is no error checking here due to the regex checking which will ensure the correct outcome
+        let operator: OperatorType = OperatorType::from(capture.name("operator").unwrap().as_str());
+        let value: u8 = capture.name("value").unwrap().as_str().parse().expect("The number is too large to be parsed! Expected a number of size u8");
+        operators.push(ValueOperator(operator, value))
+    }
+    return operators;
 }
 
 fn group_to_name(group: u8) -> &'static str {
