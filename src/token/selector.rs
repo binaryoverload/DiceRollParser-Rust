@@ -1,5 +1,3 @@
-use core::panicking::panic;
-
 pub(crate) enum SelectorType {
     GreaterThan,
     LessThan,
