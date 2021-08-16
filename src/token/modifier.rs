@@ -1,3 +1,5 @@
+use crate::token::selector::SelectorType;
+
 #[derive(Debug)]
 pub(crate) enum ModifierType {
     Reroll,
@@ -8,6 +10,12 @@ pub(crate) enum ModifierType {
     Explode,
     Keep,
     Drop
+}
+
+pub(crate) struct Modifier {
+    modifier_type: ModifierType,
+    modifier_value: Option<u8>,
+    selector: Option<(SelectorType, u8)>
 }
 
 impl From<&str> for ModifierType {
