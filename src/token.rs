@@ -12,10 +12,13 @@ pub(crate) struct Dice {
 }
 
 #[derive(Debug)]
-pub(crate) enum Token {
+pub(crate) enum Token<'a> {
+    // The operator that comes at the end of the dice roll (between dice rolls)
+    JoiningOperator(OperatorType),
     // Operator, Value
-    Operator(OperatorType, u8),
+    ValueOperator(OperatorType, u8),
     Modifier(Modifier),
     // Dice Count, Number of sides
-    Dice(Dice)
+    Dice(Dice),
+    Label(&'a str)
 }

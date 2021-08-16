@@ -4,6 +4,8 @@ use crate::token::{Token, Dice};
 use crate::token::modifier::{ModifierType, Modifier};
 use std::option::Option::Some;
 use crate::token::selector::SelectorType;
+use crate::token::Token::{Label, ValueOperator, JoiningOperator};
+use crate::token::operator::OperatorType;
 
 pub(crate) fn parse(input: &str) -> Vec<Token> {
     lazy_static! {
@@ -23,6 +25,8 @@ pub(crate) fn parse(input: &str) -> Vec<Token> {
                         }
                     },
                     3 => tokens.append(&mut parse_modifiers(mat.as_str())),
+                    5 => tokens.push(Label(mat.as_str())),
+                    6 => tokens.push(JoiningOperator(OperatorType::from(mat.as_str()))),
                     _ => {}
                 }
                 println!("Group {} [{}] ({}-{}): '{}'", group, group_to_name(group), mat.start(), mat.end(), mat.as_str())
