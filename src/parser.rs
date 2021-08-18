@@ -113,16 +113,3 @@ fn parse_operators(operators_input: &str) -> Vec<ValueOperator> {
     }
     return operators;
 }
-
-fn group_to_name(group: u8) -> &'static str {
-    match group {
-        0 => "full match",
-        1 => "die",
-        2 => "dice",
-        3 => "selectors",
-        4 => "operators",
-        5 => "label",
-        6 => "roll operator",
-        _ => panic!("Invalid group {}!", group)
-    }
-}
