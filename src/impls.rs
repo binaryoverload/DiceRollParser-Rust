@@ -1,4 +1,5 @@
-use crate::types::{SelectorType, OperatorType, ModifierType};
+use crate::types::{SelectorType, OperatorType, ModifierType, Dice, DiceRoll};
+use rand::distributions::{Distribution, Uniform};
 
 impl From<&str> for SelectorType {
     fn from(string: &str) -> Self {
@@ -45,4 +46,18 @@ impl From<&str> for ModifierType {
             _ => panic!("Invalid modifier type! Must be one of: rr ro ra mi ma e k d")
         }
     }
+}
+
+impl DiceRoll<'_> {
+
+    fn calculate_dice(dice: Dice) -> u16 {
+        let mut rng = rand::thread_rng();
+        let mut result: u16 = 0;
+        let uniform = Uniform::new(1u16, (dice.number_of_sides + 1) as u16);
+        for _ in 0..(dice.number_of_dice) {
+            result += uniform.sample(&mut rng);
+        }
+        result
+    }
+
 }
