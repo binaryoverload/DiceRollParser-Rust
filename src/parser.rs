@@ -1,11 +1,11 @@
 use regex::Regex;
 use lazy_static::lazy_static;
-use crate::token::{Token, Dice};
-use crate::token::modifier::{ModifierType, Modifier};
+use crate::types::{Token, Dice};
+use crate::types::modifier::{ModifierType, Modifier};
 use std::option::Option::Some;
-use crate::token::selector::SelectorType;
-use crate::token::Token::{Label, ValueOperator, JoiningOperator};
-use crate::token::operator::OperatorType;
+use crate::types::selector::SelectorType;
+use crate::types::Token::{Label, ValueOperator, JoiningOperator};
+use crate::types::operator::OperatorType;
 
 pub(crate) fn parse(input: &str) -> Vec<Token> {
     lazy_static! {
