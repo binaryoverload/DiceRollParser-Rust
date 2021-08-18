@@ -1,70 +1,83 @@
 use regex::Regex;
 use lazy_static::lazy_static;
-use crate::types::{Token, Dice};
-use crate::types::modifier::{ModifierType, Modifier};
+use crate::types::{Dice, Modifier, SelectorType, ModifierType, ValueOperator, OperatorType, DiceRoll};
 use std::option::Option::Some;
-use crate::types::selector::SelectorType;
-use crate::types::Token::{Label, ValueOperator, JoiningOperator};
-use crate::types::operator::OperatorType;
 
-pub(crate) fn parse(input: &str) -> Vec<Token> {
+pub(crate) fn parse(input: &str) -> Vec<DiceRoll> {
     lazy_static! {
         // Original pattern with comments: https://github.com/binaryoverload/DiceRollParser/blob/29485fdd78/src/main/java/uk/co/binaryoverload/dicerollparser/Parser.java#L25-L40
         static ref DICEROLL: Regex = Regex::new("(?:(?P<die>\\d+d\\d+)|\\((?P<dice>(?:\\d+d\\d+,?)+)\\))(?P<selectors>(?:(?:k|p|mi|ma|rr|ro|ra|e)(?:\\d+)?(?:[><lh]\\d+)?)+)?(?P<operators>(?:[+\\-*/]\\d+)+)?(?:\\[(?P<label>[^\\]]+)])?(?:(?P<roll_operator>[+\\-*/])|$)").unwrap();
     }
+    let mut dice_rolls: Vec<DiceRoll> = vec![];
     for cap in DICEROLL.captures_iter(input) {
         println!("---- New capture! ----");
-        let mut group: u8 = 0;
-        let mut tokens: Vec<Token> = vec![];
-        for subcap in cap.iter() {
-            if let Some(mat) = subcap {
-                match group {
-                    1 => tokens.push(parse_dice(mat.as_str())),
-                    2 => {
-                        for die in mat.as_str().split(",") {
-                            tokens.push(parse_dice(die))
-                        }
-                    },
-                    3 => tokens.append(&mut parse_modifiers(mat.as_str())),
-                    4 => tokens.append(&mut parse_operators(mat.as_str())),
-                    5 => tokens.push(Label(mat.as_str())),
-                    6 => tokens.push(JoiningOperator(OperatorType::from(mat.as_str()))),
-                    _ => {}
-                }
-                println!("Group {} [{}] ({}-{}): '{}'", group, group_to_name(group), mat.start(), mat.end(), mat.as_str())
-            } else {
-                println!("Group {} [{}]: None", group, group_to_name(group))
+
+        let mut dice: Vec<Dice> = vec![];
+        let mut modifiers: Vec<Modifier> = vec![];
+        let mut value_operators: Vec<ValueOperator> = vec![];
+        let mut label: Option<&str> = None;
+        let mut joining_operator: Option<OperatorType> = None;
+
+        if let Some(_die) = cap.name("die") {
+            dice.push(parse_dice(_die.as_str()))
+        } else if let Some(_dice) = cap.name("dice") {
+            for die in _dice.as_str().split(",") {
+                dice.push(parse_dice(die));
             }
-            group += 1;
+        } else {
+            panic!("There must be either 1 dice or multiple specified!");
         }
-        println!("{:?}", tokens);
-        // println!("Dice: {:?}, Selectors: {:?}, Operators: {:?}, Label: {:?}, Roll Operator {:?}",
-        //          cap.name("die").unwrap_or(cap.name("dice").expect("Dice and die are not present!")), cap.name("selectors"), cap.name("operators"), cap.name("label"), cap.name("roll_operator"));
+
+        if let Some(_modifiers) = cap.name("modifiers") {
+            modifiers = parse_modifiers(_modifiers.as_str());
+        }
+
+        if let Some(_value_operators) = cap.name("operators") {
+            value_operators = parse_operators(_value_operators.as_str());
+        }
+
+        if let Some(_label) = cap.name("label") {
+            label = Some(_label.as_str());
+        }
+
+        if let Some(_joining_operator) = cap.name("joining_operator") {
+            joining_operator = Some(OperatorType::from(_joining_operator.as_str()));
+        }
+
+        let dice_roll = DiceRoll {
+            dice,
+            modifiers,
+            value_operators,
+            label,
+            joining_operator
+        };
+        println!("{:?}", dice_roll);
+        dice_rolls.push(dice_roll);
     }
-    vec![]
+    dice_rolls
 }
 
-fn parse_dice(dice_input: &str) -> Token {
+fn parse_dice(dice_input: &str) -> Dice {
     lazy_static! {
         static ref DICE: Regex = Regex::new("^(?P<count>\\d+)d(?P<sides>\\d+)$").unwrap();
     }
     if let Some(captures) = DICE.captures(dice_input) {
         let count = captures.name("count").unwrap().as_str();
         let sides = captures.name("sides").unwrap().as_str();
-        return Token::Dice(Dice {
+        return Dice {
             number_of_dice: count.parse().unwrap(),
             number_of_sides: sides.parse().unwrap()
-        })
+        }
     } else {
         panic!("Dice input '{}' doesn't match dice pattern", dice_input)
     }
 }
 
-fn parse_modifiers(modifier_input: &str) -> Vec<Token> {
+fn parse_modifiers(modifier_input: &str) -> Vec<Modifier> {
     lazy_static! {
         static ref MODIFIERS: Regex = Regex::new("(?P<type>k|p|mi|ma|rr|ro|ra|e)(?P<value>\\d+)?(?:(?P<selector>[><lh])(?P<selector_value>\\d+))?").unwrap();
     }
-    let mut modifiers: Vec<Token> = vec![];
+    let mut modifiers: Vec<Modifier> = vec![];
     for capture in MODIFIERS.captures_iter(modifier_input) {
         let modifier_type = ModifierType::from(capture.name("type").unwrap().as_str());
         let modifier_value: Option<u8> = capture.name("value").map_or(None, |value| { Some(value.as_str().parse().unwrap()) });
@@ -78,25 +91,25 @@ fn parse_modifiers(modifier_input: &str) -> Vec<Token> {
         } else {
             None
         };
-        modifiers.push(Token::Modifier(Modifier {
+        modifiers.push(Modifier {
             modifier_type,
             modifier_value,
             selector
-        }))
+        })
     }
     return modifiers;
 }
 
-fn parse_operators(operators_input: &str) -> Vec<Token> {
+fn parse_operators(operators_input: &str) -> Vec<ValueOperator> {
     lazy_static! {
         static ref OPERATORS: Regex = Regex::new("(?P<operator>[+\\-*/])(?P<value>\\d+)").unwrap();
     }
-    let mut operators: Vec<Token> = vec![];
+    let mut operators: Vec<ValueOperator> = vec![];
     for capture in OPERATORS.captures_iter(operators_input) {
         // There is no error checking here due to the regex checking which will ensure the correct outcome
         let operator: OperatorType = OperatorType::from(capture.name("operator").unwrap().as_str());
         let value: u8 = capture.name("value").unwrap().as_str().parse().expect("The number is too large to be parsed! Expected a number of size u8");
-        operators.push(ValueOperator(operator, value))
+        operators.push(ValueOperator{ operator, value })
     }
     return operators;
 }
