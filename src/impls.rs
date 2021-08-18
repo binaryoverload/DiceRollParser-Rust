@@ -50,7 +50,7 @@ impl From<&str> for ModifierType {
 
 impl DiceRoll<'_> {
 
-    fn calculate_dice(dice: Dice) -> u16 {
+    fn calculate_dice(dice: &Dice) -> u16 {
         let mut rng = rand::thread_rng();
         let mut result: u16 = 0;
         let uniform = Uniform::new(1u16, (dice.number_of_sides + 1) as u16);
