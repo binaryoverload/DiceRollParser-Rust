@@ -1,6 +1,3 @@
-use modifier::Modifier;
-use operator::OperatorType;
-
 #[derive(Debug)]
 pub(crate) struct Dice {
     pub(crate) number_of_dice: u8,
@@ -9,7 +6,7 @@ pub(crate) struct Dice {
 
 #[derive(Debug)]
 pub(crate) struct ValueOperator {
-    pub(crate) operator_type: OperatorType,
+    pub(crate) operator: OperatorType,
     pub(crate) value: u8
 }
 
